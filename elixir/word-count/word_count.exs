@@ -14,7 +14,6 @@ defmodule Words do
 
   def add_or_increment("", map), do: map
   def add_or_increment(word, map) do
-  	nb = Map.get(map, word, 0)
-  	Map.put(map, word, nb + 1)
+    Map.update(map, word, 1, &(&1 + 1))
   end
 end
