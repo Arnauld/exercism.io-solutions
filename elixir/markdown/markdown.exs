@@ -19,78 +19,41 @@ defmodule Markdown do
     |> patch()
   end
 
-  defp process(line) do
-    cond do
-      String.starts_with?(line, "#") ->
-        line
-          |> parse_header_md_level()
-          |> join_words_with_tags()
-          |> enclose_with_header_tag()
-      String.starts_with?(line, "*") ->
-        line
-          |> parse_list_md_level()
-          |> join_words_with_tags()
-          |> enclose_with_list_tag()
-      true -> 
-        line
-          |> String.split()
-          |> join_words_with_tags()
-          |> enclose_with_paragraph_tag()
-    end
-  end
+  defp process("#" <> header_title), do: process_header(1, header_title)
+  defp process("* " <> list_entry), do: process_list_entry(list_entry)
+  defp process(line), do: process_paragrah(line)
 
-  defp parse_list_md_level(line) do
+  defp process_paragrah(line) do
     line
-      |> String.trim_leading("* ")
-      |> String.split()
+    |> process_block()
+    |> enclose_with_tag("p")
   end
 
-  defp enclose_with_list_tag(text) do
-    "<li>#{text}</li>"
+  defp process_list_entry(text) do
+    text
+    |> process_block()
+    |> enclose_with_tag("li")
   end
 
-  defp parse_header_md_level(header_line) do
-    [level | words] = String.split(header_line)
-    {String.length(level), words}
+  defp process_header(level, "#" <> header_title), do: process_header(level+1, header_title)
+  defp process_header(level, " " <> header_title) do
+    header_title
+    |> process_block()
+    |> enclose_with_tag("h#{level}")
   end
 
-  defp enclose_with_header_tag({header_level, header_title}) do
-    "<h#{header_level}>#{header_title}</h#{header_level}>"
+  defp process_block(line) do
+    line |> bold() |> italic()
   end
 
-  defp enclose_with_paragraph_tag(text) do
-    "<p>#{text}</p>"
+  defp enclose_with_tag(text, tag), do: "<#{tag}>#{text}</#{tag}>"
+
+  defp bold(word) do
+    String.replace(word, ~r/__(.+)__/, "<strong>\\1</strong>")
   end
 
-  defp join_words_with_tags({level, words}) do
-    {level, join_words_with_tags(words)}
-  end
-  defp join_words_with_tags(words) do
-    words
-    |> Enum.map(&replace_md_with_tag/1)
-    |> Enum.join(" ")
-  end
-
-  defp replace_md_with_tag(word) do
-    word
-    |> replace_prefix_md()
-    |> replace_suffix_md()
-  end
-
-  defp replace_prefix_md(w) do
-    cond do
-      w =~ ~r/^#{"__"}{1}/ -> String.replace(w, ~r/^#{"__"}{1}/, "<strong>", global: false)
-      w =~ ~r/^[#{"_"}{1}][^#{"_"}+]/ -> String.replace(w, ~r/_/, "<em>", global: false)
-      true -> w
-    end
-  end
-
-  defp replace_suffix_md(w) do
-    cond do
-      w =~ ~r/#{"__"}{1}$/ -> String.replace(w, ~r/#{"__"}{1}$/, "</strong>")
-      w =~ ~r/[^#{"_"}{1}]/ -> String.replace(w, ~r/_/, "</em>")
-      true -> w
-    end
+  defp italic(word) do
+    String.replace(word, ~r/_(.+)_/, "<em>\\1</em>")
   end
 
   defp patch(l) do
