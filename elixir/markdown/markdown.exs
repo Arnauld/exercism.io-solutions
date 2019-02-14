@@ -15,8 +15,31 @@ defmodule Markdown do
     markdown
     |> String.split("\n")
     |> Enum.map(&process/1)
+    |> group_list_entries()
     |> Enum.join()
-    |> patch()
+  end
+
+  defp group_list_entries(lines), do: group_list_entries(lines, [], [])
+
+  defp group_list_entries([], [], acc), do: Enum.reverse(acc)
+  defp group_list_entries([], list_entries, acc) do
+    group_list_entries([], [], [enclose_ul(list_entries)|acc])
+  end
+  defp group_list_entries(["<li>" <> line | others], uls, acc) do
+    group_list_entries(others, ["<li>"<>line | uls], acc)
+  end
+  defp group_list_entries([line | others], [], acc) do
+    group_list_entries(others, [], [line|acc])
+  end
+  defp group_list_entries(lines, list_entries, acc) do
+    group_list_entries(lines, [], [enclose_ul(list_entries)|acc])
+  end
+
+  defp enclose_ul(uls) do
+    uls
+      |> Enum.reverse()
+      |> Enum.join()
+      |> enclose_with_tag("ul")
   end
 
   defp process("#" <> header_title), do: process_header(1, header_title)
