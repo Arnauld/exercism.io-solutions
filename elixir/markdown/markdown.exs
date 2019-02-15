@@ -79,11 +79,4 @@ defmodule Markdown do
     String.replace(word, ~r/_(.+)_/, "<em>\\1</em>")
   end
 
-  defp patch(l) do
-    String.replace_suffix(
-      String.replace(l, "<li>", "<ul>" <> "<li>", global: false),
-      "</li>",
-      "</li>" <> "</ul>"
-    )
-  end
 end
