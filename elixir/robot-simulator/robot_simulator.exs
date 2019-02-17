@@ -13,10 +13,22 @@ defmodule RobotSimulator do
   """
   @spec create(direction :: atom, position :: {integer, integer}) :: any
   def create(direction \\ :north, position \\ {0, 0}) do
-    case {Map.get(@settings, direction, nil), position} do
-       {nil, _} -> {:error, "invalid direction"}
-       {_, {x, y}} when is_integer(x) and is_integer(y) -> {direction, position}
-       _ -> {:error, "invalid position"}
+    with :ok <- validate_direction(direction),
+         :ok <- validate_position(position) do
+      {direction, position}
+    end
+  end
+
+  defp validate_position({x, y}) when is_integer(x) and is_integer(y), do: :ok
+  defp validate_position(_), do: {:error, "invalid position"}
+
+  defp validate_direction(direction) do
+    case Map.get(@settings, direction, nil) do
+      nil ->
+        {:error, "invalid direction"}
+
+      _ ->
+        :ok
     end
   end
 
@@ -30,19 +42,22 @@ defmodule RobotSimulator do
 
   def simulate({direction, position}, "R" <> instructions) do
     {_left, right, _advance} = Map.get(@settings, direction)
+
     {right, position}
     |> simulate(instructions)
   end
 
   def simulate({direction, position}, "L" <> instructions) do
     {left, _right, _advance} = Map.get(@settings, direction)
+
     {left, position}
     |> simulate(instructions)
   end
 
   def simulate({direction, {x, y}}, "A" <> instructions) do
-    {_left, _right, {dx,dy}} = Map.get(@settings, direction)
-    {direction, {x+dx, y+dy}}
+    {_left, _right, {dx, dy}} = Map.get(@settings, direction)
+
+    {direction, {x + dx, y + dy}}
     |> simulate(instructions)
   end
 
