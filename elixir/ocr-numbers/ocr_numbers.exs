@@ -54,7 +54,6 @@ defmodule OCRNumbers do
         input
         |> Enum.map(&String.to_charlist/1)
         |> split_and_map_letters()
-        |> List.to_string()
 
       {:ok, result}
     end
@@ -98,11 +97,13 @@ defmodule OCRNumbers do
     split_and_map_letters(input, [], "")
   end
 
-  defp split_and_map_letters(['', '', '', ''], acc, out) do
-    out_part =
-      Enum.reverse(acc)
-      |> Enum.map(&to_letter/1)
-    out <> out_part
+  defp split_and_map_letters([], acc, out) do
+    build_letters_and_merge_line(acc, out)
+  end
+
+  defp split_and_map_letters(['', '', '', '' | other_lines], acc, out) do
+    new_out = build_letters_and_merge_line(acc, out)
+    split_and_map_letters(other_lines, [], new_out)
   end
 
   defp split_and_map_letters(
@@ -110,11 +111,25 @@ defmodule OCRNumbers do
            [a1, b1, c1 | r1],
            [a2, b2, c2 | r2],
            [a3, b3, c3 | r3],
-           [a4, b4, c4 | r4]
+           [a4, b4, c4 | r4] | other_lines
          ],
-         acc
+         acc,
+         out
        ) do
     letter = [[a1, b1, c1], [a2, b2, c2], [a3, b3, c3], [a4, b4, c4]]
-    split_and_map_letters([r1, r2, r3, r4], [letter | acc])
+    split_and_map_letters([r1, r2, r3, r4 | other_lines], [letter | acc], out)
+  end
+
+  defp build_letters_and_merge_line(acc, out) do
+    out_part =
+      Enum.reverse(acc)
+      |> Enum.map(&to_letter/1)
+      |> List.to_string()
+
+    case {out, out_part} do
+      {_, ""} -> out
+      {"", _} -> out_part
+      _ -> out <> "," <> out_part
+    end
   end
 end
