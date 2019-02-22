@@ -44,10 +44,8 @@ defmodule Zipper do
   Get the complete tree from a zipper.
   """
   @spec to_tree(Z.t()) :: BT.t()
-  def to_tree(%Zipper{node: n, stack: stack}), do: last_of([n|stack])
-
-  defp last_of([h]), do: h
-  defp last_of([h|t]), do: last_of(t)
+  def to_tree(%Zipper{node: n, stack: []}), do: n
+  def to_tree(%Zipper{stack: stack}), do: List.last(stack)
 
   @doc """
   Get the value of the focus node.
@@ -87,8 +85,8 @@ defmodule Zipper do
   Get the parent of the focus node, if any.
   """
   @spec up(Z.t()) :: Z.t()
-  def up(z) do
-  end
+  def up(%Zipper{stack: []}), do: nil
+  def up(z = %Zipper{stack: [h|t]}), do: %Zipper{z|node: h, stack: t}
 
   @doc """
   Set the value of the focus node.
