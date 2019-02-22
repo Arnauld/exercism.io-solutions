@@ -97,10 +97,8 @@ defmodule Zipper do
   """
   @spec set_value(Z.t(), any) :: Z.t()
   def set_value(%Zipper{node: n, stack: stack}, new_value) do
-    new_n = %BinTree{n | value: new_value}
-    # then need to rewrite entire history to reference the new node in chain
-    new_stack = rewrite_tree(new_n, stack, [])
-    %Zipper{node: new_n, stack: new_stack}
+    %BinTree{n | value: new_value}
+    |> rewrite_zipper_tree(stack)
   end
 
   @doc """
@@ -108,10 +106,8 @@ defmodule Zipper do
   """
   @spec set_left(Z.t(), BT.t()) :: Z.t()
   def set_left(%Zipper{node: n, stack: stack}, new_value) do
-    new_n = %BinTree{n | left: new_value}
-    # then need to rewrite entire history to reference the new node in chain
-    new_stack = rewrite_tree(new_n, stack, [])
-    %Zipper{node: new_n, stack: new_stack}
+    %BinTree{n | left: new_value}
+    |> rewrite_zipper_tree(stack)
   end
 
   @doc """
@@ -119,8 +115,11 @@ defmodule Zipper do
   """
   @spec set_right(Z.t(), BT.t()) :: Z.t()
   def set_right(%Zipper{node: n, stack: stack}, new_value) do
-    new_n = %BinTree{n | right: new_value}
-    # then need to rewrite entire history to reference the new node in chain
+    %BinTree{n | right: new_value}
+    |> rewrite_zipper_tree(stack)
+  end
+
+  defp rewrite_zipper_tree(new_n, stack) do
     new_stack = rewrite_tree(new_n, stack, [])
     %Zipper{node: new_n, stack: new_stack}
   end
@@ -140,5 +139,4 @@ defmodule Zipper do
     new_stack = [{direction, new_parent} | out_stack]
     rewrite_tree(new_parent, t, new_stack)
   end
-
 end
