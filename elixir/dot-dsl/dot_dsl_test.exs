@@ -50,6 +50,7 @@ defmodule DotTest do
              )
   end
 
+  # @tag :pending
   test "graph with one node with multiple keywords" do
     assert %Graph{nodes: [{:a, [color: :green, bgcolor: :yellow]}]} ==
              exprt(
@@ -101,7 +102,7 @@ defmodule DotTest do
              )
   end
 
-  @tag :pending
+  # @tag :pending
   test "keywords stuck to graph without space" do
     assert_raise ArgumentError, fn ->
       exprt(
@@ -112,7 +113,7 @@ defmodule DotTest do
     end
   end
 
-  @tag :pending
+  # @tag :pending
   test "keywords stuck to node without space" do
     assert_raise ArgumentError, fn ->
       exprt(
@@ -123,7 +124,7 @@ defmodule DotTest do
     end
   end
 
-  @tag :pending
+  # @tag :pending
   test "keywords stuck to edge without space" do
     assert_raise ArgumentError, fn ->
       exprt(
@@ -134,7 +135,7 @@ defmodule DotTest do
     end
   end
 
-  @tag :pending
+  # @tag :pending
   test "invalid statement: int" do
     assert_raise ArgumentError, fn ->
       exprt(
@@ -146,7 +147,7 @@ defmodule DotTest do
     end
   end
 
-  @tag :pending
+  # @tag :pending
   test "invalid statement: list" do
     assert_raise ArgumentError, fn ->
       exprt(
