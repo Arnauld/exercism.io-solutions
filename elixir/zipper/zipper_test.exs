@@ -60,22 +60,22 @@ defmodule ZipperTest do
     assert t1() |> from_tree |> left |> right |> up |> set_value(5) |> to_tree == t2()
   end
 
-  @tag :pending
+  # @tag :pending
   test "set_left with leaf" do
     assert t1() |> from_tree |> left |> set_left(leaf(5)) |> to_tree == t3()
   end
 
-  @tag :pending
+  # @tag :pending
   test "set_right with nil" do
     assert t1() |> from_tree |> left |> set_right(nil) |> to_tree == t4()
   end
 
-  @tag :pending
+  # @tag :pending
   test "set_right with subtree" do
     assert t1() |> from_tree |> set_right(bt(6, leaf(7), leaf(8))) |> to_tree == t5()
   end
 
-  @tag :pending
+  # @tag :pending
   test "set_value on deep focus" do
     assert t1() |> from_tree |> left |> right |> set_value(5) |> to_tree == t6()
   end

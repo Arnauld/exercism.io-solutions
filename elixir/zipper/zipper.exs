@@ -103,6 +103,28 @@ defmodule Zipper do
     %Zipper{node: new_n, stack: new_stack}
   end
 
+  @doc """
+  Replace the left child tree of the focus node.
+  """
+  @spec set_left(Z.t(), BT.t()) :: Z.t()
+  def set_left(%Zipper{node: n, stack: stack}, new_value) do
+    new_n = %BinTree{n | left: new_value}
+    # then need to rewrite entire history to reference the new node in chain
+    new_stack = rewrite_tree(new_n, stack, [])
+    %Zipper{node: new_n, stack: new_stack}
+  end
+
+  @doc """
+  Replace the right child tree of the focus node.
+  """
+  @spec set_right(Z.t(), BT.t()) :: Z.t()
+  def set_right(%Zipper{node: n, stack: stack}, new_value) do
+    new_n = %BinTree{n | right: new_value}
+    # then need to rewrite entire history to reference the new node in chain
+    new_stack = rewrite_tree(new_n, stack, [])
+    %Zipper{node: new_n, stack: new_stack}
+  end
+
   defp rewrite_tree(_, [], out_stack), do: Enum.reverse(out_stack)
 
   defp rewrite_tree(n, [{direction, parent} | t], out_stack) do
@@ -119,25 +141,4 @@ defmodule Zipper do
     rewrite_tree(new_parent, t, new_stack)
   end
 
-  @doc """
-  Replace the left child tree of the focus node.
-  """
-  @spec set_left(Z.t(), BT.t()) :: Z.t()
-  def set_left(z, l) do
-    z
-    |> left()
-    |> set_value(l)
-    |> up()
-  end
-
-  @doc """
-  Replace the right child tree of the focus node.
-  """
-  @spec set_right(Z.t(), BT.t()) :: Z.t()
-  def set_right(z, r) do
-    z
-    |> right()
-    |> set_value(r)
-    |> up()
-  end
 end
