@@ -100,6 +100,10 @@ defmodule Zipper do
   """
   @spec set_left(Z.t(), BT.t()) :: Z.t()
   def set_left(z, l) do
+    z
+    |> left()
+    |> set_value(l)
+    |> up()
   end
 
   @doc """
@@ -107,5 +111,9 @@ defmodule Zipper do
   """
   @spec set_right(Z.t(), BT.t()) :: Z.t()
   def set_right(z, r) do
+    z
+    |> right()
+    |> set_value(r)
+    |> up()
   end
 end
