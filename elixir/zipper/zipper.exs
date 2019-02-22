@@ -29,7 +29,7 @@ defmodule BinTree do
 end
 
 defmodule Zipper do
-  @type t :: %Zipper{node: BinTree.t(), stack: [BinTree.t()]}
+  @type t :: %Zipper{node: BinTree.t(), stack: [{atom(), BinTree.t()}]}
   defstruct node: nil, stack: []
 
   @doc """
@@ -45,7 +45,11 @@ defmodule Zipper do
   """
   @spec to_tree(Z.t()) :: BT.t()
   def to_tree(%Zipper{node: n, stack: []}), do: n
-  def to_tree(%Zipper{stack: stack}), do: List.last(stack)
+
+  def to_tree(%Zipper{stack: stack}) do
+    {_, n} = List.last(stack)
+    n
+  end
 
   @doc """
   Get the value of the focus node.
@@ -63,7 +67,7 @@ defmodule Zipper do
         nil
 
       new_node ->
-        %Zipper{z | node: new_node, stack: [n | z.stack]}
+        %Zipper{z | node: new_node, stack: [{:left, n} | z.stack]}
     end
   end
 
@@ -77,7 +81,7 @@ defmodule Zipper do
         nil
 
       new_node ->
-        %Zipper{z | node: new_node, stack: [n | z.stack]}
+        %Zipper{z | node: new_node, stack: [{:right, n} | z.stack]}
     end
   end
 
@@ -86,13 +90,33 @@ defmodule Zipper do
   """
   @spec up(Z.t()) :: Z.t()
   def up(%Zipper{stack: []}), do: nil
-  def up(z = %Zipper{stack: [h|t]}), do: %Zipper{z|node: h, stack: t}
+  def up(z = %Zipper{stack: [{_, h} | t]}), do: %Zipper{z | node: h, stack: t}
 
   @doc """
   Set the value of the focus node.
   """
   @spec set_value(Z.t(), any) :: Z.t()
-  def set_value(z, v) do
+  def set_value(%Zipper{node: n, stack: stack}, new_value) do
+    new_n = %BinTree{n | value: new_value}
+    # then need to rewrite entire history to reference the new node in chain
+    new_stack = rewrite_tree(new_n, stack, [])
+    %Zipper{node: new_n, stack: new_stack}
+  end
+
+  defp rewrite_tree(_, [], out_stack), do: Enum.reverse(out_stack)
+
+  defp rewrite_tree(n, [{direction, parent} | t], out_stack) do
+    new_parent =
+      case direction do
+        :left ->
+          %BinTree{parent | left: n}
+
+        :right ->
+          %BinTree{parent | right: n}
+      end
+
+    new_stack = [{direction, new_parent} | out_stack]
+    rewrite_tree(new_parent, t, new_stack)
   end
 
   @doc """
