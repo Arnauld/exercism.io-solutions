@@ -25,8 +25,8 @@ defmodule Bowling do
     new_rolls = [roll | rolls]
 
     case validate_rolls(new_rolls) do
-      s when s == :ok or s == :incomplete ->
-        %Bowling{game | rolls: new_rolls, status: s}
+      status when status == :ok or status == :incomplete ->
+        %Bowling{game | rolls: new_rolls, status: status}
 
       error ->
         error
@@ -37,63 +37,47 @@ defmodule Bowling do
     validate_rolls(Enum.reverse(rolls), 1)
   end
 
-  defp validate_rolls([], 11) do
-    :ok
-  end
+  defp validate_rolls([], 11), do: :ok
 
-  defp validate_rolls([], n) do
-    :incomplete
-  end
+  defp validate_rolls([], _), do: :incomplete
 
   defp validate_rolls(_, roll_count) when roll_count > 10 do
     {:error, "Cannot roll after game is over"}
   end
 
   # last but incomplete roll
-  defp validate_rolls([r], n) do
-    :incomplete
-  end
+  defp validate_rolls([_], _), do: :incomplete
 
   # final but incomplete strike
-  defp validate_rolls([r, r1], n = 10) when r == 10 do
-    :incomplete
-  end
+  defp validate_rolls([10, _], 10), do: :incomplete
 
   # final perfect strike
-  defp validate_rolls([r, 10, _], 10) when r == 10 do
-    :ok
-  end
+  defp validate_rolls([10, 10, _], 10), do: :ok
 
-  defp validate_rolls([r, r1, r2], 10) when r == 10 and r1 + r2 > 10 do
+  defp validate_rolls([10, r1, r2], 10) when r1 + r2 > 10 do
     {:error, "Pin count exceeds pins on the lane"}
   end
 
-  defp validate_rolls([r, r1, r2], 10) when r == 10 do
-    :ok
-  end
+  defp validate_rolls([10, _, _], 10), do: :ok
 
   # final spare
-  defp validate_rolls([r1, r2, r], 10) when r1 + r2 == 10 do
-    :ok
-  end
+  defp validate_rolls([r1, r2, _], 10) when r1 + r2 == 10, do: :ok
 
   # final but incomplete spare
-  defp validate_rolls([r1, r2], n = 10) when r1 + r2 == 10 do
-    :incomplete
-  end
+  defp validate_rolls([r1, r2], 10) when r1 + r2 == 10, do: :incomplete
 
   # strike
-  defp validate_rolls([r | others], roll_count) when r == 10 do
+  defp validate_rolls([10 | others], roll_count) do
     validate_rolls(others, roll_count + 1)
   end
 
   # complete but invalid roll
-  defp validate_rolls([r1, r2 | others], roll_count) when r1 + r2 > 10 do
+  defp validate_rolls([r1, r2 | _others], _roll_count) when r1 + r2 > 10 do
     {:error, "Pin count exceeds pins on the lane"}
   end
 
   # complete roll
-  defp validate_rolls([r1, r2 | others], roll_count) do
+  defp validate_rolls([_r1, _r2 | others], roll_count) do
     validate_rolls(others, roll_count + 1)
   end
 
