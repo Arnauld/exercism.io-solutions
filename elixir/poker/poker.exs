@@ -62,22 +62,49 @@ defmodule Poker do
   defp card_to_string({@ace, color}), do: "A#{color}"
   defp card_to_string({num, color}), do: "#{num}#{color}"
 
+  defp sort_cards(cards) do
+    cards
+    |> Enum.sort(fn {n1, c1}, {n2, c2} ->
+      if n1 == n2 do
+        c1 >= c2
+      else
+        n1 >= n2
+      end
+    end)
+  end
+
   defp compare_and_filter(refs, []), do: refs
 
   defp compare_and_filter(refs = [ref | _], [other | others]) do
     r_score = score_of(ref)
     o_score = score_of(other)
+
     cond do
       o_score == r_score ->
         compare_and_filter([other | refs], others)
+
       o_score > r_score ->
         compare_and_filter([other], others)
+
       true ->
         compare_and_filter(refs, others)
     end
   end
 
-  defp score_of([cards]) do
+  defp score_of(cards) do
+    cards
+    |> sort_cards()
+    |> score_of_sorted()
+  end
 
+  defp score_of_sorted(cards) do
+    highest_card =
+      cards
+      |> Enum.map(fn {n, c} -> n end)
+      |> Enum.sort()
+      |> Enum.reverse()
+      |> List.first()
+
+    highest_card
   end
 end
