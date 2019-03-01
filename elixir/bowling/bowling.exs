@@ -1,6 +1,9 @@
 defmodule Bowling do
   defstruct rolls: [], status: :incomplete
 
+  @frame_max 10
+  @nb_pins 10
+
   @doc """
     Creates a new game of bowling that can be used to store the results of
     the game
@@ -37,11 +40,11 @@ defmodule Bowling do
     validate_rolls(Enum.reverse(rolls), 1)
   end
 
-  defp validate_rolls([], 11), do: :ok
+  defp validate_rolls([], frame) when frame == @frame_max + 1, do: :ok
 
   defp validate_rolls([], _), do: :incomplete
 
-  defp validate_rolls(_, roll_count) when roll_count > 10 do
+  defp validate_rolls(_, frame) when frame > @frame_max do
     {:error, "Cannot roll after game is over"}
   end
 
@@ -49,36 +52,36 @@ defmodule Bowling do
   defp validate_rolls([_], _), do: :incomplete
 
   # final but incomplete strike
-  defp validate_rolls([10, _], 10), do: :incomplete
+  defp validate_rolls([@nb_pins, _], @frame_max), do: :incomplete
 
   # final perfect strike
-  defp validate_rolls([10, 10, _], 10), do: :ok
+  defp validate_rolls([@nb_pins, @nb_pins, _], @frame_max), do: :ok
 
-  defp validate_rolls([10, r1, r2], 10) when r1 + r2 > 10 do
+  defp validate_rolls([@nb_pins, r1, r2], @frame_max) when r1 + r2 > @nb_pins do
     {:error, "Pin count exceeds pins on the lane"}
   end
 
-  defp validate_rolls([10, _, _], 10), do: :ok
+  defp validate_rolls([@nb_pins, _, _], @frame_max), do: :ok
 
   # final spare
-  defp validate_rolls([r1, r2, _], 10) when r1 + r2 == 10, do: :ok
+  defp validate_rolls([r1, r2, _], @frame_max) when r1 + r2 == @nb_pins, do: :ok
 
   # final but incomplete spare
-  defp validate_rolls([r1, r2], 10) when r1 + r2 == 10, do: :incomplete
+  defp validate_rolls([r1, r2], @frame_max) when r1 + r2 == @nb_pins, do: :incomplete
 
   # strike
-  defp validate_rolls([10 | others], roll_count) do
-    validate_rolls(others, roll_count + 1)
+  defp validate_rolls([@nb_pins | others], frame) do
+    validate_rolls(others, frame + 1)
   end
 
   # complete but invalid roll
-  defp validate_rolls([r1, r2 | _others], _roll_count) when r1 + r2 > 10 do
+  defp validate_rolls([r1, r2 | _others], _frame) when r1 + r2 > @nb_pins do
     {:error, "Pin count exceeds pins on the lane"}
   end
 
   # complete roll
-  defp validate_rolls([_r1, _r2 | others], roll_count) do
-    validate_rolls(others, roll_count + 1)
+  defp validate_rolls([_r1, _r2 | others], frame) do
+    validate_rolls(others, frame + 1)
   end
 
   @doc """
@@ -99,13 +102,13 @@ defmodule Bowling do
     end
   end
 
-  defp score_frames(_, total, 10), do: total
+  defp score_frames(_, total, @frame_max), do: total
 
-  defp score_frames([r1, n1, n2 | others], total, frame) when r1 == 10 do
-    score_frames([n1, n2 | others], total + r1 + n1 + n2, frame + 1)
+  defp score_frames([r, n1, n2 | others], total, frame) when r == @nb_pins do
+    score_frames([n1, n2 | others], total + r + n1 + n2, frame + 1)
   end
 
-  defp score_frames([r1, r2, n1 | others], total, frame) when r1 + r2 == 10 do
+  defp score_frames([r1, r2, n1 | others], total, frame) when r1 + r2 == @nb_pins do
     score_frames([n1 | others], total + r1 + r2 + n1, frame + 1)
   end
 
