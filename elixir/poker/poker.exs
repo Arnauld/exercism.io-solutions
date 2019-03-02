@@ -4,6 +4,8 @@ defmodule Poker do
   @king 13
   @ace 14
 
+  @card_max 14
+
   @doc """
   Given a list of poker hands, return a list containing the highest scoring hand.
 
@@ -39,6 +41,7 @@ defmodule Poker do
       |> Enum.map(&parse_cards/1)
 
     compare_and_filter([first], others)
+    |> Enum.reverse()
     |> Enum.map(&cards_to_string/1)
   end
 
@@ -62,49 +65,141 @@ defmodule Poker do
   defp card_to_string({@ace, color}), do: "A#{color}"
   defp card_to_string({num, color}), do: "#{num}#{color}"
 
-  defp sort_cards(cards) do
-    cards
-    |> Enum.sort(fn {n1, c1}, {n2, c2} ->
-      if n1 == n2 do
-        c1 >= c2
-      else
-        n1 >= n2
-      end
-    end)
-  end
-
   defp compare_and_filter(refs, []), do: refs
 
   defp compare_and_filter(refs = [ref | _], [other | others]) do
-    r_score = score_of(ref)
-    o_score = score_of(other)
+    case compare(ref, other) do
+      c when c > 0 ->
+        compare_and_filter(refs, others)
 
-    cond do
-      o_score == r_score ->
-        compare_and_filter([other | refs], others)
-
-      o_score > r_score ->
+      c when c < 0 ->
         compare_and_filter([other], others)
 
-      true ->
-        compare_and_filter(refs, others)
+      _ ->
+        compare_and_filter([other | refs], others)
     end
   end
 
-  defp score_of(cards) do
-    cards
-    |> sort_cards()
-    |> score_of_sorted()
+  defmacro otherwise(delta, expr) do
+    quote do
+      case unquote(delta) do
+        0 ->
+          unquote(expr)
+
+        _ ->
+          unquote(delta)
+      end
+    end
   end
 
-  defp score_of_sorted(cards) do
-    highest_card =
+  defp compare(cards1, cards2) do
+    group1 = group_by_num(cards1)
+    group2 = group_by_num(cards2)
+
+    compare_straight(cards1, cards2)
+    |> otherwise(compare_set(group1, group2))
+    |> otherwise(compare_pairs(group1, group2))
+    |> otherwise(raw_score(cards1) - raw_score(cards2))
+  end
+
+  defp compare_straight(cards1, cards2) do
+    straight1 =
+      cards1
+      |> sort_cards_by_num()
+      |> straight?()
+
+    straight2 =
+      cards2
+      |> sort_cards_by_num()
+      |> straight?()
+
+    IO.puts("\n ::straight ... #{inspect(cards1 |> sort_cards_by_num())}: #{straight1}")
+    IO.puts("\n ::straight ... #{inspect(cards2 |> sort_cards_by_num())}: #{straight2}")
+
+    cond do
+      straight1 and straight2 ->
+        score_nums(cards1 |> Enum.map(&num_of_card/1)) -
+          score_nums(cards2 |> Enum.map(&num_of_card/1))
+
+      straight1 ->
+        -1
+
+      straight2 ->
+        +1
+
+      true ->
+        0
+    end
+  end
+
+  defp sort_cards_by_num(cards) do
+    cards |> Enum.sort(fn {n1, _}, {n2, c} -> n1 >= n2 end)
+  end
+
+  defp num_of_card({n, _}), do: n
+
+  defp compare_set(group1, group2) do
+    set1 = group1 |> Map.get(3, [])
+    set2 = group2 |> Map.get(3, [])
+
+    (length(set1) - length(set2))
+    |> otherwise(score_nums(set1) - score_nums(set2))
+  end
+
+  defp compare_pairs(group1, group2) do
+    pairs1 = group1 |> Map.get(2, [])
+    pairs2 = group2 |> Map.get(2, [])
+
+    (length(pairs1) - length(pairs2))
+    |> otherwise(score_nums(pairs1) - score_nums(pairs2))
+  end
+
+  defp s() do
+    sorted_cards =
       cards
-      |> Enum.map(fn {n, c} -> n end)
-      |> Enum.sort()
-      |> Enum.reverse()
-      |> List.first()
+      |> Enum.sort(fn {n1, _}, {n2, c} -> n1 >= n2 end)
 
-    highest_card
+    straight = straight?(sorted_cards)
+    flush = flush?(cards)
   end
+
+  defp group_by_num(cards) do
+    cards
+    |> Enum.group_by(fn {n, c} -> n end)
+    |> Enum.to_list()
+    |> Enum.map(fn {n, cards} -> {length(cards), n} end)
+    |> Enum.group_by(fn {nb, n} -> nb end, fn {nb, n} -> n end)
+  end
+
+  defp raw_score(cards) do
+    cards
+    |> Enum.map(fn {n, c} -> n end)
+    |> score_nums()
+  end
+
+  defp score_nums(nums) do
+    nums
+    |> Enum.sort()
+    |> Enum.zip(0..4)
+    |> Enum.map(fn {n1, n2} -> n1 * :math.pow(@card_max, n2) end)
+    |> Enum.sum()
+    |> round()
+  end
+
+  defp flush?(cards) do
+    nb_colors =
+      cards
+      |> Enum.map(fn {n, c} -> c end)
+      |> Enum.uniq()
+      |> length()
+
+    nb_colors == 1
+  end
+
+  defp straight?([{n, _}, {np1, _}, {np2, _}, {np3, _}, {np4, _}])
+       when np1 == n + 1 and np2 == n + 2 and np3 == n + 3 and np4 == n + 4,
+       do: true
+
+  defp straight?([{@ace, _}, {1, _}, {2, _}, {3, _}, {4, _}]), do: true
+  defp straight?(_), do: false
 end
