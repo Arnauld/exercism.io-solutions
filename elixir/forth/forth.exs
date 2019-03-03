@@ -1,7 +1,7 @@
 defmodule Forth do
-  @opaque evaluator :: any
+  @opaque evaluator :: %Forth{}
 
-  defstruct stack: []
+  defstruct stack: [], words: %{}
 
   @doc """
   Create a new evaluator.
@@ -15,33 +15,73 @@ defmodule Forth do
   Evaluate an input string, updating the evaluator state.
   """
   @spec eval(evaluator, String.t()) :: evaluator
-  def eval(%Forth{stack: stack}, expr) do
-    new_stack =
-      expr
-      |> String.split(~r/[^\w+-\\*\/]| /)
-      |> Enum.map(&String.upcase/1)
-      |> Enum.reduce(stack, &evaluate_token/2)
-
-    %Forth{stack: new_stack}
+  def eval(ev, expr) do
+    expr
+    |> String.split(~r/[\s\pC]/u)
+    |> Enum.map(&String.upcase/1)
+    |> evaluate_expr(ev)
   end
 
-  defp evaluate_token("+", [a, b | others]), do: [a + b | others]
-  defp evaluate_token("*", [a, b | others]), do: [a * b | others]
-  defp evaluate_token("-", [a, b | others]), do: [b - a | others]
-  defp evaluate_token("/", [0, b | others]), do: raise(Forth.DivisionByZero)
-  defp evaluate_token("/", [a, b | others]), do: [div(b, a) | others]
-  defp evaluate_token("DUP", []), do: raise(Forth.StackUnderflow)
-  defp evaluate_token("DUP", [a | others]), do: [a, a | others]
-  defp evaluate_token("DROP", []), do: raise(Forth.StackUnderflow)
-  defp evaluate_token("DROP", [a | others]), do: others
-  defp evaluate_token("SWAP", []), do: raise(Forth.StackUnderflow)
-  defp evaluate_token("SWAP", [_]), do: raise(Forth.StackUnderflow)
-  defp evaluate_token("SWAP", [a, b | others]), do: [b, a | others]
-  defp evaluate_token("OVER", []), do: raise(Forth.StackUnderflow)
-  defp evaluate_token("OVER", [_]), do: raise(Forth.StackUnderflow)
-  defp evaluate_token("OVER", [a, b | others]), do: [b, a, b | others]
+  defp evaluate_expr([], ev), do: ev
 
-  defp evaluate_token(token, stack), do: [String.to_integer(token) | stack]
+  defp evaluate_expr([":", word | others], ev) do
+    with :ok <- validate_word(word) do
+      {word_expr, remaining} = evaluate_word(others, [])
+      new_words = Map.put(ev.words, word, word_expr)
+      new_ev = %Forth{ev | words: new_words}
+      evaluate_expr(remaining, new_ev)
+    end
+  end
+
+  defp evaluate_expr([token | expr_remaining], ev = %Forth{stack: stack, words: words}) do
+    case Map.get(words, token) do
+      nil ->
+        new_stack = evaluate_token(token, stack)
+        new_ev = %Forth{ev | stack: new_stack}
+        evaluate_expr(expr_remaining, new_ev)
+
+      word_expr ->
+        evaluate_expr(word_expr ++ expr_remaining, ev)
+    end
+  end
+
+  defp validate_word(word) do
+    if String.match?(word, ~r/[^0-9]+.*/i) do
+      :ok
+    else
+      raise Forth.InvalidWord
+    end
+  end
+
+  defp evaluate_word([";" | others], expr), do: {Enum.reverse(expr), others}
+  defp evaluate_word([e | others], expr), do: evaluate_word(others, [e | expr])
+
+  defp evaluate_token("+", [a, b | others]), do: [a + b | others]
+  defp evaluate_token("+", _), do: raise(Forth.StackUnderflow)
+  defp evaluate_token("*", [a, b | others]), do: [a * b | others]
+  defp evaluate_token("*", _), do: raise(Forth.StackUnderflow)
+  defp evaluate_token("-", [a, b | others]), do: [b - a | others]
+  defp evaluate_token("-", _), do: raise(Forth.StackUnderflow)
+  defp evaluate_token("/", [0, _ | _]), do: raise(Forth.DivisionByZero)
+  defp evaluate_token("/", [a, b | others]), do: [div(b, a) | others]
+  defp evaluate_token("/", _), do: raise(Forth.StackUnderflow)
+  defp evaluate_token("DUP", [a | others]), do: [a, a | others]
+  defp evaluate_token("DUP", _), do: raise(Forth.StackUnderflow)
+  defp evaluate_token("DROP", [_ | others]), do: others
+  defp evaluate_token("DROP", _), do: raise(Forth.StackUnderflow)
+  defp evaluate_token("SWAP", [a, b | others]), do: [b, a | others]
+  defp evaluate_token("SWAP", _), do: raise(Forth.StackUnderflow)
+  defp evaluate_token("OVER", [a, b | others]), do: [b, a, b | others]
+  defp evaluate_token("OVER", _), do: raise(Forth.StackUnderflow)
+
+
+  defp evaluate_token(token, stack) do
+    if String.match?(token, ~r/[0-9]+/) do
+      [String.to_integer(token) | stack]
+    else
+      raise Forth.UnknownWord
+    end
+  end
 
   @doc """
   Return the current stack as a string with the element on top of the stack
