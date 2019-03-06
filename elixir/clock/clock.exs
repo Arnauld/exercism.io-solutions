@@ -18,8 +18,16 @@ defmodule Clock do
   """
   @spec new(integer, integer) :: Clock
   def new(hour, minute) do
-    %Clock{hour: hour, minute: minute}
+    {delta_hour, delta_minute} = positive_minute({hour,minute})
+    effective_hour = positive_hour(delta_hour + div(delta_minute, 60))
+    %Clock{hour: rem(effective_hour, 24), minute: rem(delta_minute, 60)}
   end
+
+  defp positive_hour(hour) when hour >=0, do: hour
+  defp positive_hour(hour), do: positive_hour(hour + 24)
+
+  defp positive_minute({hour,minute}) when minute >= 0, do: {hour, minute}
+  defp positive_minute({hour,minute}), do: positive_minute({hour - 1, minute + 60})
 
   @doc """
   Adds two clock times:
@@ -29,5 +37,6 @@ defmodule Clock do
   """
   @spec add(Clock, integer) :: Clock
   def add(%Clock{hour: hour, minute: minute}, add_minute) do
+    new(hour, minute + add_minute)
   end
 end
