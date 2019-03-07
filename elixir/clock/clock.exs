@@ -1,6 +1,9 @@
 defmodule Clock do
   defstruct hour: 0, minute: 0
 
+  @hour_per_day 24
+  @minute_per_hour 60
+
   defimpl String.Chars, for: Clock do
     def to_string(clock) do
       "#{leftPad(clock.hour)}:#{leftPad(clock.minute)}"
@@ -26,15 +29,15 @@ defmodule Clock do
   defp positive_hour(hour) when hour >= 0, do: hour
 
   defp positive_hour(hour) do
-    num = div(-hour, 24) + 1
-    hour + 24 * num
+    num_day = div(-hour, @hour_per_day) + 1
+    hour +  @hour_per_day * num_day
   end
 
   defp positive_minute({hour, minute}) when minute >= 0, do: {hour, minute}
 
   defp positive_minute({hour, minute}) do
-    num = div(-minute, 60) + 1
-    {hour - num, minute + 60 * num}
+    num_hour = div(-minute, @minute_per_hour) + 1
+    {hour - num_hour, minute + @minute_per_hour * num_hour}
   end
 
   @doc """
