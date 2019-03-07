@@ -22,8 +22,11 @@ defmodule Clock do
   @spec new(integer, integer) :: Clock
   def new(hour, minute) do
     {delta_hour, delta_minute} = positive_minute({hour, minute})
-    effective_hour = positive_hour(delta_hour + div(delta_minute, 60))
-    %Clock{hour: rem(effective_hour, 24), minute: rem(delta_minute, 60)}
+    effective_minute = rem(delta_minute, @minute_per_hour)
+    remaining_hour = div(delta_minute, @minute_per_hour)
+    adjusted_hour = positive_hour(delta_hour + remaining_hour)
+    effective_hour = rem(adjusted_hour, @hour_per_day)
+    %Clock{hour: effective_hour, minute: effective_minute}
   end
 
   defp positive_hour(hour) when hour >= 0, do: hour
