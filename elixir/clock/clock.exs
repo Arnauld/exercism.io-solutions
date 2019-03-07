@@ -21,27 +21,30 @@ defmodule Clock do
   """
   @spec new(integer, integer) :: Clock
   def new(hour, minute) do
-    {delta_hour, delta_minute} = positive_minute({hour, minute})
-    effective_minute = rem(delta_minute, @minute_per_hour)
-    remaining_hour = div(delta_minute, @minute_per_hour)
-    adjusted_hour = positive_hour(delta_hour + remaining_hour)
-    effective_hour = rem(adjusted_hour, @hour_per_day)
+    {effective_hour, effective_minute} = adjuste_time({hour, minute})
     %Clock{hour: effective_hour, minute: effective_minute}
   end
 
-  defp positive_hour(hour) when hour >= 0, do: hour
+  defp adjuste_time({hour, minute}) when minute >= 0 and hour >= 0 do
+    delta_hour = div(minute, @minute_per_hour)
+    adjusted_hour = hour + delta_hour
 
-  defp positive_hour(hour) do
-    num_day = div(-hour, @hour_per_day) + 1
-    hour +  @hour_per_day * num_day
+    effective_hour = rem(adjusted_hour, @hour_per_day)
+    effective_minute = rem(minute, @minute_per_hour)
+    {effective_hour, effective_minute}
   end
 
-  defp positive_minute({hour, minute}) when minute >= 0, do: {hour, minute}
-
-  defp positive_minute({hour, minute}) do
-    num_hour = div(-minute, @minute_per_hour) + 1
-    {hour - num_hour, minute + @minute_per_hour * num_hour}
+  defp adjuste_time({hour, minute}) when minute < 0 do
+    nb_hour = div(-minute, @minute_per_hour) + 1
+    adjuste_time({hour - nb_hour, minute + @minute_per_hour * nb_hour})
   end
+
+  defp adjuste_time({hour, minute}) when hour < 0 do
+    nb_day = div(-hour, @hour_per_day) + 1
+    adjusted_hour = hour +  @hour_per_day * nb_day
+    adjuste_time({adjusted_hour, minute})
+  end
+
 
   @doc """
   Adds two clock times:
